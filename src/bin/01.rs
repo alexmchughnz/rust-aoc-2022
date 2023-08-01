@@ -1,31 +1,21 @@
 pub fn part_one(input: &str) -> Option<u32> {
-    let elves = input.split("\n\n");
+    let elves: Vec<u32> = input
+        .split("\n\n")
+        .map(|elf| elf.lines().map(|cal| cal.parse::<u32>().unwrap()).sum())
+        .collect();
 
-    let calories = elves.map(|elf| {
-        elf.trim()
-            .split('\n')
-            .map(|item| item.parse::<u32>().unwrap())
-            .sum::<u32>()
-    });
-
-    calories.max()
+    elves.into_iter().max()
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let elves = input.split("\n\n");
+    let mut elves: Vec<u32> = input
+        .split("\n\n")
+        .map(|elf| elf.lines().map(|cal| cal.parse::<u32>().unwrap()).sum())
+        .collect();
 
-    let calories = elves.map(|elf| {
-        elf.trim()
-            .split('\n')
-            .map(|item| item.parse::<u32>().unwrap())
-            .sum::<u32>()
-    });
+    elves.sort();
 
-    let mut sorted_calories: Vec<u32> = calories.collect();
-    sorted_calories.sort();
-    sorted_calories.reverse();
-
-    Some(sorted_calories[0..3].into_iter().sum())
+    Some(elves.into_iter().rev().take(3).sum())
 }
 
 fn main() {
