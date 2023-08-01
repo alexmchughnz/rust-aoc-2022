@@ -7,5 +7,15 @@ default-run = "advent_of_code"
 publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "scaffold"
+path = "src/bin/tools/scaffold.rs"
+[[bin]]
+name = "download"
+path = "src/bin/tools/download.rs"
+[[bin]]
+name = "read"
+path = "src/bin/tools/read.rs"
+
 [dependencies]
 pico-args = "0.5.0"
