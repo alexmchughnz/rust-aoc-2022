@@ -1,5 +1,67 @@
+#[derive(Clone, PartialEq)]
+enum Shape {
+    Rock,
+    Paper,
+    Scissors,
+}
+use Shape::*;
+const SHAPE_ORDER: [Shape; 3] = [Rock, Paper, Scissors]; // Higher index beats lower index, e.g. Paper > Rock
+
+fn map_elf_char(char: &str) -> Shape {
+    match char {
+        "A" => Rock,
+        "B" => Paper,
+        "C" => Scissors,
+        _ => panic!("Invalid shape"),
+    }
+}
+
+fn map_my_char(char: &str) -> Shape {
+    match char {
+        "X" => Rock,
+        "Y" => Paper,
+        "Z" => Scissors,
+        _ => panic!("Invalid shape"),
+    }
+}
+
+fn score_shape(shape: &Shape) -> u32 {
+    match shape {
+        Rock => 1,
+        Paper => 2,
+        Scissors => 3,
+    }
+}
+
+fn score_match(elf_shape: &Shape, my_shape: &Shape) -> u32 {
+    if elf_shape == my_shape {
+        return 3;
+    }
+
+    let my_winner = SHAPE_ORDER
+        .into_iter()
+        .cycle()
+        .skip_while(|s| s != elf_shape)
+        .skip(1) // Elf's shape
+        .next() // Winner vs elf's shape
+        .expect("cycle iteration should never end");
+    if *my_shape == my_winner {
+        return 6;
+    } else {
+        return 0;
+    }
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
-    None
+    let mut score: u32 = 0;
+    for mut line in input.lines().map(|l| l.split_whitespace()) {
+        let elf_shape = map_elf_char(line.next().unwrap());
+        let my_shape = map_my_char(line.next().unwrap());
+
+        score += score_shape(&my_shape);
+        score += score_match(&elf_shape, &my_shape);
+    }
+    Some(score)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
@@ -19,7 +81,7 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 2);
-        assert_eq!(part_one(&input), None);
+        assert_eq!(part_one(&input), Some(15));
     }
 
     #[test]
