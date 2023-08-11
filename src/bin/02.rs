@@ -7,6 +7,13 @@ enum Shape {
 use Shape::*;
 const SHAPE_ORDER: [Shape; 3] = [Rock, Paper, Scissors]; // Higher index beats lower index, e.g. Paper > Rock
 
+enum Outcome {
+    Win,
+    Lose,
+    Draw,
+}
+use Outcome::*;
+
 fn map_elf_char(char: &str) -> Shape {
     match char {
         "A" => Rock,
@@ -33,9 +40,17 @@ fn score_shape(shape: &Shape) -> u32 {
     }
 }
 
-fn score_match(elf_shape: &Shape, my_shape: &Shape) -> u32 {
+fn score_outcome(outcome: &Outcome) -> u32 {
+    match outcome {
+        Win => 6,
+        Draw => 3,
+        Lose => 0,
+    }
+}
+
+fn get_outcome_for_game(elf_shape: &Shape, my_shape: &Shape) -> Outcome {
     if elf_shape == my_shape {
-        return 3;
+        return Draw;
     }
 
     let my_winner = SHAPE_ORDER
@@ -46,9 +61,9 @@ fn score_match(elf_shape: &Shape, my_shape: &Shape) -> u32 {
         .next() // Winner vs elf's shape
         .expect("cycle iteration should never end");
     if *my_shape == my_winner {
-        return 6;
+        return Win;
     } else {
-        return 0;
+        return Lose;
     }
 }
 
@@ -59,7 +74,7 @@ pub fn part_one(input: &str) -> Option<u32> {
         let my_shape = map_my_char(line.next().unwrap());
 
         score += score_shape(&my_shape);
-        score += score_match(&elf_shape, &my_shape);
+        score += score_outcome(&get_outcome_for_game(&elf_shape, &my_shape));
     }
     Some(score)
 }
