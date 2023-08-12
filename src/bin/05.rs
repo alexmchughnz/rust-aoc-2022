@@ -1,5 +1,9 @@
 type CrateStructure = Vec<Vec<char>>;
 type Move = (u32, usize, usize);
+enum MoveStrategy {
+    Single,
+    Multiple,
+}
 
 fn read_crates(drawing: &str) -> CrateStructure {
     const CRATE_OFFSET: usize = 1;
@@ -37,11 +41,21 @@ fn read_moves(procedure: &str) -> Vec<Move> {
     moves
 }
 
-fn perform_moves(crates: &mut CrateStructure, moves: Vec<Move>) {
+fn perform_moves(crates: &mut CrateStructure, moves: Vec<Move>, strategy: MoveStrategy) {
     for (num, src, dest) in moves {
-        for _ in 0..num {
-            let c = crates[src].pop().expect("Should not move from empty stack");
-            crates[dest].push(c);
+        match strategy {
+            MoveStrategy::Single => {
+                for _ in 0..num {
+                    let moved = crates[src].pop().expect("Should not move from empty stack");
+                    crates[dest].push(moved);
+                }
+            }
+            MoveStrategy::Multiple => {
+                let len = crates[src].len();
+                let range_to_move = (len - num as usize)..(len);
+                let mut moved: Vec<_> = crates[src].drain(range_to_move).collect();
+                crates[dest].append(&mut moved);
+            }
         }
     }
 }
@@ -52,7 +66,7 @@ pub fn part_one(input: &str) -> Option<String> {
 
     let mut crates = read_crates(drawing);
     let moves = read_moves(procedure);
-    perform_moves(&mut crates, moves);
+    perform_moves(&mut crates, moves, MoveStrategy::Single);
 
     let top_crates = crates
         .into_iter()
@@ -62,8 +76,20 @@ pub fn part_one(input: &str) -> Option<String> {
     Some(top_crates)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<String> {
+    let mut info = input.split("\n\n");
+    let (drawing, procedure) = (info.next().unwrap(), info.next().unwrap());
+
+    let mut crates = read_crates(drawing);
+    let moves = read_moves(procedure);
+    perform_moves(&mut crates, moves, MoveStrategy::Multiple);
+
+    let top_crates = crates
+        .into_iter()
+        .map(|stack| stack.last().unwrap().clone())
+        .collect();
+
+    Some(top_crates)
 }
 
 fn main() {
@@ -85,6 +111,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 5);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(String::from("MCD")));
     }
 }
