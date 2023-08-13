@@ -1,5 +1,15 @@
+use std::collections::HashSet;
+
 pub fn part_one(input: &str) -> Option<u32> {
-    None
+    const WINDOW_SIZE: usize = 4;
+    let buffer: Vec<char> = input.chars().collect();
+    for (i, window) in buffer.windows(WINDOW_SIZE).enumerate() {
+        let unique = HashSet::<&char>::from_iter(window);
+        if unique.len() == WINDOW_SIZE {
+            return Some((WINDOW_SIZE + i) as u32);
+        }
+    }
+    unreachable!();
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
