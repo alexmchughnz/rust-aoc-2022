@@ -1,3 +1,21 @@
+enum Node {
+    Dir(Vec<Node>),
+    File(File),
+}
+struct File {
+    name: String,
+    size: u32,
+}
+
+impl Node {
+    fn size(&self) -> u32 {
+        match self {
+            Node::File(f) => f.size,
+            Node::Dir(children) => children.iter().map(|n| n.size()).sum(),
+        }
+    }
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
     None
 }
