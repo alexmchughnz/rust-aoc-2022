@@ -13,7 +13,15 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    const WINDOW_SIZE: usize = 14;
+    let buffer: Vec<char> = input.chars().collect();
+    for (i, window) in buffer.windows(WINDOW_SIZE).enumerate() {
+        let unique = HashSet::<&char>::from_iter(window);
+        if unique.len() == WINDOW_SIZE {
+            return Some((WINDOW_SIZE + i) as u32);
+        }
+    }
+    unreachable!();
 }
 
 fn main() {
@@ -35,6 +43,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 6);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(19));
     }
 }
