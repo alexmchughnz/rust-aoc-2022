@@ -8,6 +8,20 @@ enum Node {
     DirPointer(DirPointer),
     File(u32),
 }
+impl Node {
+    fn size(&self) -> u32 {
+        match self {
+            Node::File(size) => *size,
+            Node::DirPointer(p) => {
+                let mut dir = p.borrow_mut();
+                if dir.size.is_none() {
+                    dir.size = Some(dir.children.values().map(|n| n.size()).sum());
+                }
+                dir.size.expect("Dir should have a computed size")
+            }
+        }
+    }
+}
 
 struct Dir {
     parent: Option<DirPointer>,
@@ -32,7 +46,7 @@ fn execute_cd(curr: DirPointer, root: DirPointer, cd_cmd: &str) -> DirPointer {
         .last()
         .expect("`cd` command should specify dest dir");
 
-    return match dest {
+    let new_dir = match dest {
         "/" => root,
 
         ".." => curr
@@ -50,6 +64,8 @@ fn execute_cd(curr: DirPointer, root: DirPointer, cd_cmd: &str) -> DirPointer {
             }
         }
     };
+
+    new_dir
 }
 
 fn execute_ls<'a>(curr: DirPointer, lines: impl Iterator<Item = &'a str>) {
@@ -88,23 +104,26 @@ fn parse_tree(input: &str) -> DirPointer {
     root
 }
 
-fn compute_sizes(tree: &Node) -> u32 {
-    match tree {
-        Node::File(size) => *size,
-        Node::DirPointer(p) => {
-            let mut dir = p.borrow_mut();
-            if dir.size.is_none() {
-                dir.size = Some(dir.children.values().map(|n| compute_sizes(n)).sum());
-            }
-            dir.size.expect("Dir should have a computed size")
-        }
+fn traverse_sizes(node: &Node) -> Vec<u32> {
+    let mut sizes = Vec::<u32>::new();
+    if let Node::DirPointer(p) = node {
+        sizes.push(node.size());
+        let mut child_sizes: Vec<u32> = p
+            .borrow()
+            .children
+            .values()
+            .flat_map(|p| traverse_sizes(p))
+            .collect();
+        sizes.append(&mut child_sizes);
     }
+    sizes
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
     let tree = parse_tree(input);
-    let total_size = compute_sizes(&Node::DirPointer(tree));
-    Some(total_size)
+    let dir_sizes = traverse_sizes(&Node::DirPointer(tree));
+    let deletable_size: u32 = dir_sizes.into_iter().filter(|s| *s <= 100000).sum();
+    Some(deletable_size)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
