@@ -4,20 +4,22 @@ use std::rc::*;
 
 type DirPointer = Rc<RefCell<Dir>>;
 
-enum ChildNode {
+enum Node {
     DirPointer(DirPointer),
     File(u32),
 }
 
 struct Dir {
     parent: Option<DirPointer>,
-    children: HashMap<String, ChildNode>,
+    children: HashMap<String, Node>,
+    size: Option<u32>,
 }
 impl Dir {
     fn new_pointer(parent: Option<DirPointer>) -> DirPointer {
         let new_dir = Dir {
             parent,
             children: HashMap::new(),
+            size: None,
         };
 
         Rc::new(RefCell::new(new_dir))
@@ -41,7 +43,7 @@ fn execute_cd(curr: DirPointer, root: DirPointer, cd_cmd: &str) -> DirPointer {
 
         other => {
             let child = &curr.borrow().children[other];
-            if let ChildNode::DirPointer(dir) = child {
+            if let Node::DirPointer(dir) = child {
                 dir.clone()
             } else {
                 panic!("Cannot `cd` into file")
@@ -55,10 +57,10 @@ fn execute_ls<'a>(curr: DirPointer, lines: impl Iterator<Item = &'a str>) {
         let mut data = line.split_whitespace();
         let (kind, name) = (data.next().unwrap(), data.next().unwrap());
         let child = match kind.parse::<u32>() {
-            Ok(size) => ChildNode::File(size),
+            Ok(size) => Node::File(size),
             _ => {
                 let new_dir = Dir::new_pointer(Some(curr.clone()));
-                ChildNode::DirPointer(new_dir)
+                Node::DirPointer(new_dir)
             }
         };
 
@@ -86,9 +88,23 @@ fn parse_tree(input: &str) -> DirPointer {
     root
 }
 
+fn compute_sizes(tree: &Node) -> u32 {
+    match tree {
+        Node::File(size) => *size,
+        Node::DirPointer(p) => {
+            let mut dir = p.borrow_mut();
+            if dir.size.is_none() {
+                dir.size = Some(dir.children.values().map(|n| compute_sizes(n)).sum());
+            }
+            dir.size.expect("Dir should have a computed size")
+        }
+    }
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
     let tree = parse_tree(input);
-    None
+    let total_size = compute_sizes(&Node::DirPointer(tree));
+    Some(total_size)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
