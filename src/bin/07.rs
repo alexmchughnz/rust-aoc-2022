@@ -67,7 +67,7 @@ fn execute_ls<'a>(curr: DirPointer, lines: impl Iterator<Item = &'a str>) {
 }
 
 fn parse_tree(input: &str) -> DirPointer {
-    let mut lines = input.lines();
+    let mut lines = input.lines().peekable();
 
     // Create root node.
     let root = Dir::new_pointer(None);
@@ -77,7 +77,7 @@ fn parse_tree(input: &str) -> DirPointer {
         if cmd.contains("cd") {
             curr = execute_cd(curr, root.clone(), cmd);
         } else if cmd.contains("ls") {
-            let contents = lines.by_ref().take_while(|l| !l.starts_with('$'));
+            let contents = std::iter::from_fn(|| lines.next_if(|l| !l.starts_with('$')));
             execute_ls(curr.clone(), contents);
         } else {
             panic!("Invalid command");
