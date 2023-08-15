@@ -73,7 +73,31 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let forest = parse_forest(input);
+    let (n_rows, n_cols) = size(&forest);
+
+    let mut best_score: u32 = 0;
+    // Iterate over inner trees.
+    for r in 1..n_rows - 1 {
+        let row = &forest[r];
+        for c in 1..n_cols - 1 {
+            let height = &row[c];
+
+            let surrounding = surrounding_heights((r, c), &forest);
+            let scores_by_direction = surrounding.into_values().map(|dir| {
+                match dir.iter().position(|t| *t >= height) {
+                    Some(idx) => idx + 1, // Num of trees until a blocking one (incl.)
+                    None => dir.len(),    // No blocking trees, count all in that direction
+                }
+            });
+
+            let score = scores_by_direction.product::<usize>() as u32;
+            if score > best_score {
+                best_score = score;
+            }
+        }
+    }
+    Some(best_score)
 }
 
 fn main() {
@@ -95,6 +119,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 8);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(8));
     }
 }
