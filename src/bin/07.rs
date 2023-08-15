@@ -127,7 +127,25 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    const DISK_SPACE: u32 = 70000000;
+    const REQ_SPACE: u32 = 30000000;
+
+    let tree = parse_tree(input);
+    let dir_sizes = traverse_sizes(&Node::DirPointer(tree.clone()));
+
+    let used_space = tree
+        .borrow()
+        .size
+        .expect("Root size should be calculated by `traverse_sizes`");
+    let unused_space = DISK_SPACE - used_space;
+    let size_to_delete = REQ_SPACE - unused_space;
+
+    let delete_cand = dir_sizes
+        .into_iter()
+        .filter(|s| *s > size_to_delete)
+        .min()
+        .expect("Should be at least one candidate for deletion");
+    Some(delete_cand)
 }
 
 fn main() {
@@ -149,6 +167,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 7);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(24933642));
     }
 }
