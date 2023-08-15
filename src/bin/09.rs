@@ -1,5 +1,84 @@
+#[derive(Hash, Default, PartialEq, Eq, Clone)]
+struct Position {
+    x: i32,
+    y: i32,
+}
+
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+use std::collections::HashSet;
+
+use Direction::*;
+
+struct Move {
+    dir: Direction,
+    num: u32,
+}
+
+impl Position {
+    fn is_adjacent(&self, other: &Self) -> bool {
+        let x_adj = (self.x - other.x).abs() <= 1;
+        let y_adj = (self.y - other.y).abs() <= 1;
+        x_adj && y_adj
+    }
+
+    fn move_once(&mut self, dir: &Direction) {
+        match dir {
+            Up => self.y += 1,
+            Down => self.y -= 1,
+            Left => self.x -= 1,
+            Right => self.x += 1,
+        }
+    }
+
+    fn move_towards(&mut self, other: &Self) {
+        self.x += (other.x - self.x).signum();
+        self.y += (other.y - self.y).signum();
+    }
+}
+
+fn parse_moves(input: &str) -> Vec<Move> {
+    let mut moves = Vec::<Move>::new();
+    for mut line in input.lines().map(|l| l.split_whitespace()) {
+        let dir = match line.next().unwrap() {
+            "U" => Up,
+            "D" => Down,
+            "L" => Left,
+            "R" => Right,
+            _ => panic!("Only four valid directions."),
+        };
+        let num = line.next().unwrap().parse::<u32>().unwrap();
+        moves.push(Move { dir, num });
+    }
+
+    moves
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
-    None
+    let mut head = Position {
+        ..Default::default()
+    };
+    let mut tail = Position {
+        ..Default::default()
+    };
+
+    let mut tail_visited: HashSet<Position> = HashSet::from([tail.clone()]);
+
+    for m in parse_moves(input) {
+        for _ in 0..m.num {
+            head.move_once(&m.dir);
+            if !tail.is_adjacent(&head) {
+                tail.move_towards(&head);
+                tail_visited.insert(tail.clone());
+            }
+        }
+    }
+
+    Some(tail_visited.len() as u32)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
