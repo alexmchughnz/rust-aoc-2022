@@ -33,20 +33,16 @@ fn parse_forest(input: &str) -> Forest {
     forest.into_boxed_slice()
 }
 
-fn get_surrounding_heights(
-    (r, c): (usize, usize),
-    forest: &Forest,
-) -> HashMap<Direction, Vec<&u8>> {
+fn surrounding_heights((r, c): (usize, usize), forest: &Forest) -> HashMap<Direction, Vec<&u8>> {
     let (n_rows, n_cols) = size(forest);
-    let horz_slice = |r: usize, cs: Range<usize>| forest[r][cs].iter().collect::<Vec<_>>();
-    let vert_slice =
-        |rs: Range<usize>, c: usize| forest[rs].iter().map(|row| &row[c]).collect::<Vec<_>>();
+    let horz = |r: usize, cs: Range<usize>| forest[r][cs].iter();
+    let vert = |rs: Range<usize>, c: usize| forest[rs].iter().map(move |row| &row[c]);
 
     HashMap::from([
-        (Up, vert_slice(0..r, c)),
-        (Down, vert_slice(r + 1..n_rows, c)),
-        (Left, horz_slice(r, 0..c)),
-        (Right, horz_slice(r, c + 1..n_cols)),
+        (Up, vert(0..r, c).rev().collect()),
+        (Down, vert(r + 1..n_rows, c).collect()),
+        (Left, horz(r, 0..c).rev().collect()),
+        (Right, horz(r, c + 1..n_cols).collect()),
     ])
 }
 
@@ -66,7 +62,7 @@ pub fn part_one(input: &str) -> Option<u32> {
         for c in 1..n_cols - 1 {
             let height = &row[c];
 
-            let surrounding = get_surrounding_heights((r, c), &forest);
+            let surrounding = surrounding_heights((r, c), &forest);
             if surrounding.into_values().any(|seq| is_highest(height, seq)) {
                 n_visible += 1;
             }
