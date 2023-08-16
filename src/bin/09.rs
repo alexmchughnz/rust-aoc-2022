@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 #[derive(Hash, Default, PartialEq, Eq, Clone)]
 struct Position {
     x: i32,
@@ -10,8 +12,6 @@ enum Direction {
     Left,
     Right,
 }
-use std::collections::HashSet;
-
 use Direction::*;
 
 struct Move {
@@ -82,7 +82,29 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    const NUM_KNOTS: usize = 10;
+    let mut knots: [Position; NUM_KNOTS] = Default::default();
+
+    let mut tail_visited: HashSet<Position> = HashSet::from([knots.last().unwrap().clone()]);
+
+    for m in parse_moves(input) {
+        for _ in 0..m.num {
+            knots.first_mut().unwrap().move_once(&m.dir);
+            for i in 1..knots.len() {
+                let (ahead, remaining) = knots.split_at_mut(i);
+                let knot = remaining.first_mut().unwrap();
+                let leader = ahead.last().unwrap();
+
+                if !knot.is_adjacent(leader) {
+                    knot.move_towards(leader);
+                }
+            }
+
+            tail_visited.insert(knots.last().unwrap().clone());
+        }
+    }
+
+    Some(tail_visited.len() as u32)
 }
 
 fn main() {
@@ -97,13 +119,20 @@ mod tests {
 
     #[test]
     fn test_part_one() {
-        let input = advent_of_code::read_file("examples", 9);
+        let input = "R 4
+        U 4
+        L 3
+        D 1
+        R 4
+        D 1
+        L 5
+        R 2";
         assert_eq!(part_one(&input), Some(13));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 9);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(36));
     }
 }
