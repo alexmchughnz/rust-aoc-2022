@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
-struct Monkey {
+struct Monkey<'a> {
     items: Vec<u32>,
-    inspect: Box<dyn FnMut(&mut u32)>,
-    test: Box<dyn Fn(&u32) -> usize>,
+    inspect: Box<dyn FnMut(&mut u32) + 'a>,
+    test: Box<dyn Fn(&u32) -> usize + 'a>,
 }
-impl Monkey {
+impl Monkey<'_> {
     fn throw(&mut self, item: &u32, target: &mut Self) {}
 }
 
@@ -39,7 +39,7 @@ fn parse_monkey(desc: &str) -> Monkey {
 
     let items = items_desc
         .split(',')
-        .map(|i| i.parse::<u32>().unwrap())
+        .map(|i| i.trim().parse::<u32>().unwrap())
         .collect();
 
     let mut operation_parts = operation_desc.split_whitespace().skip(1);
