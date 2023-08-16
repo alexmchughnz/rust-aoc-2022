@@ -74,8 +74,45 @@ pub fn part_one(input: &str) -> Option<i32> {
     Some(sum_strengths)
 }
 
-pub fn part_two(input: &str) -> String {
-    "".to_owned()
+pub fn part_two(input: &str) -> Option<String> {
+    const ROW_WIDTH: usize = 40;
+    let mut events = parse_events(input).into_iter();
+    let mut queue = Vec::<Event>::new();
+
+    let mut rx: i32 = 1;
+    let mut output = String::new();
+
+    let mut cycle = 0;
+    loop {
+        if queue.is_empty() {
+            match events.next() {
+                Some(e) => queue.push(e),
+                None => break,
+            }
+        }
+
+        cycle += 1;
+        if (cycle > 1) && (cycle % ROW_WIDTH == 1) {
+            output += "\n";
+        }
+
+        let position = ((cycle - 1) % ROW_WIDTH) as i32;
+        let pixel = if (rx - 1..=rx + 1).contains(&position) {
+            "#"
+        } else {
+            "."
+        };
+        output += pixel;
+
+        for pending in queue.iter_mut() {
+            if let Some(val) = pending.tick() {
+                rx += val as i32;
+            }
+        }
+        queue.retain(|e| e.n_cycles > 0);
+    }
+
+    Some(output)
 }
 
 fn main() {
@@ -99,13 +136,15 @@ mod tests {
         let input = advent_of_code::read_file("examples", 10);
         assert_eq!(
             part_two(&input),
-            "##..##..##..##..##..##..##..##..##..##..
+            Some(
+                "##..##..##..##..##..##..##..##..##..##..
 ###...###...###...###...###...###...###.
 ####....####....####....####....####....
 #####.....#####.....#####.....#####.....
 ######......######......######......####
 #######.......#######.......#######....."
-                .to_owned()
+                    .to_owned()
+            )
         );
     }
 }
