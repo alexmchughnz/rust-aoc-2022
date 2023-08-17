@@ -1,22 +1,22 @@
 use std::cell::RefCell;
 
 enum Operation {
-    Add(u32),
-    Multiply(u32),
+    Add(u64),
+    Multiply(u64),
     Square,
 }
 use Operation::*;
 
 struct Monkey {
-    items: Vec<u32>,
-    n_inspections: u32,
+    items: Vec<u64>,
+    n_inspections: u64,
     operation: Operation,
-    divisor: u32,
+    divisor: u64,
     true_idx: usize,
     false_idx: usize,
 }
 impl Monkey {
-    fn inspect(&mut self, item: &mut u32) {
+    fn inspect(&mut self, item: &mut u64) {
         self.n_inspections += 1;
 
         *item = match self.operation {
@@ -26,7 +26,7 @@ impl Monkey {
         }
     }
 
-    fn test(&self, item: &u32) -> usize {
+    fn test(&self, item: &u64) -> usize {
         if item % self.divisor == 0 {
             self.true_idx
         } else {
@@ -34,7 +34,7 @@ impl Monkey {
         }
     }
 
-    fn throw(target: &mut Self, item: u32) {
+    fn throw(target: &mut Self, item: u64) {
         target.items.push(item);
     }
 }
@@ -53,7 +53,7 @@ impl Monkey {
 
         let items = items_desc
             .split(',')
-            .map(|i| i.trim().parse::<u32>().unwrap())
+            .map(|i| i.trim().parse::<u64>().unwrap())
             .collect();
 
         let mut operation_parts = operation_desc.split_whitespace().skip(1);
@@ -63,8 +63,8 @@ impl Monkey {
             Square
         } else {
             match symbol {
-                "*" => Multiply(operand.parse::<u32>().unwrap()),
-                "+" => Add(operand.parse::<u32>().unwrap()),
+                "*" => Multiply(operand.parse::<u64>().unwrap()),
+                "+" => Add(operand.parse::<u64>().unwrap()),
                 _ => panic!("Attempt to parse invalid operation symbol"),
             }
         };
@@ -84,16 +84,16 @@ impl Monkey {
     }
 }
 
-fn parse_ending_number(string: &str) -> u32 {
+fn parse_ending_number(string: &str) -> u64 {
     string
         .split_whitespace()
         .last()
         .unwrap()
-        .parse::<u32>()
+        .parse::<u64>()
         .unwrap()
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
+pub fn part_one(input: &str) -> Option<u64> {
     let mut monkeys = Vec::<RefCell<Monkey>>::new();
     for monkey_desc in input.split("\n\n") {
         monkeys.push(RefCell::new(Monkey::parse(monkey_desc)));
@@ -115,13 +115,37 @@ pub fn part_one(input: &str) -> Option<u32> {
     const N_ACTIVE: usize = 2;
     monkeys.sort_by_key(|m| m.borrow().n_inspections);
     let most_active = monkeys.into_iter().rev().take(N_ACTIVE);
-    let monkey_business: u32 = most_active.map(|m| m.borrow().n_inspections).product();
+    let monkey_business: u64 = most_active.map(|m| m.borrow().n_inspections).product();
 
     Some(monkey_business)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u64> {
+    let mut monkeys = Vec::<RefCell<Monkey>>::new();
+    for monkey_desc in input.split("\n\n") {
+        monkeys.push(RefCell::new(Monkey::parse(monkey_desc)));
+    }
+    let common_divisor: u64 = monkeys.iter().map(|m| m.borrow().divisor).product();
+
+    const NUM_ROUNDS: usize = 10_000;
+    for _ in 0..NUM_ROUNDS {
+        for mut monkey in monkeys.iter().map(|m| m.borrow_mut()) {
+            let mut items: Vec<_> = monkey.items.drain(..).collect();
+            for item in items.iter_mut() {
+                monkey.inspect(item);
+                *item %= common_divisor;
+                let target_idx = monkey.test(item);
+                Monkey::throw(&mut monkeys[target_idx].borrow_mut(), *item);
+            }
+        }
+    }
+
+    const N_ACTIVE: usize = 2;
+    monkeys.sort_by_key(|m| m.borrow().n_inspections);
+    let most_active = monkeys.into_iter().rev().take(N_ACTIVE);
+    let monkey_business: u64 = most_active.map(|m| m.borrow().n_inspections).product();
+
+    Some(monkey_business)
 }
 
 fn main() {
@@ -143,6 +167,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 11);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(2713310158));
     }
 }
