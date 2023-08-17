@@ -8,8 +8,8 @@ struct Monkey<'a> {
 }
 impl Monkey<'_> {
     fn inspect(&mut self, item: u32) -> u32 {
-        let f = &self.inspect_fn;
         self.n_inspections += 1;
+        let f = &self.inspect_fn;
         f(item)
     }
 
@@ -24,7 +24,7 @@ impl Monkey<'_> {
 }
 
 impl Monkey<'_> {
-    fn parse<'a>(desc: &str) -> Monkey {
+    fn parse(desc: &str) -> Monkey {
         let mut lines = desc
             .lines()
             .map(move |l: &str| l.split(':').last().unwrap());
@@ -98,8 +98,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 
     const NUM_ROUNDS: usize = 20;
     for _ in 0..NUM_ROUNDS {
-        for i in 0..monkeys.len() {
-            let mut monkey = monkeys[i].borrow_mut();
+        for mut monkey in monkeys.iter().map(|m| m.borrow_mut()) {
             let items: Vec<_> = monkey.items.drain(..).collect();
             for mut item in items {
                 item = monkey.inspect(item);
