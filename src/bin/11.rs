@@ -1,21 +1,37 @@
 use std::cell::RefCell;
 
-struct Monkey<'a> {
+enum Operation {
+    Add(u32),
+    Multiply(u32),
+    Square,
+}
+use Operation::*;
+
+struct Monkey {
     items: Vec<u32>,
     n_inspections: u32,
-    inspect_fn: Box<dyn Fn(u32) -> u32 + 'a>,
-    test_fn: Box<dyn Fn(&u32) -> usize + 'a>,
+    operation: Operation,
+    divisor: u32,
+    true_idx: usize,
+    false_idx: usize,
 }
-impl Monkey<'_> {
-    fn inspect(&mut self, item: u32) -> u32 {
+impl Monkey {
+    fn inspect(&mut self, item: &mut u32) {
         self.n_inspections += 1;
-        let f = &self.inspect_fn;
-        f(item)
+
+        *item = match self.operation {
+            Add(addend) => *item + addend,
+            Multiply(multiplier) => *item * multiplier,
+            Square => *item * *item,
+        }
     }
 
     fn test(&self, item: &u32) -> usize {
-        let f = &self.test_fn;
-        f(item)
+        if item % self.divisor == 0 {
+            self.true_idx
+        } else {
+            self.false_idx
+        }
     }
 
     fn throw(target: &mut Self, item: u32) {
@@ -23,7 +39,7 @@ impl Monkey<'_> {
     }
 }
 
-impl Monkey<'_> {
+impl Monkey {
     fn parse(desc: &str) -> Monkey {
         let mut lines = desc
             .lines()
@@ -41,43 +57,30 @@ impl Monkey<'_> {
             .collect();
 
         let mut operation_parts = operation_desc.split_whitespace().skip(1);
-        let operation = parse_operation(operation_parts.next().unwrap());
-        let operand = operation_parts.next().unwrap();
-        let inspect = move |item: u32| -> u32 {
-            match operand {
-                "old" => operation(item, item),
-                other => {
-                    let operand = other.parse::<u32>().expect("Operand should be valid u32");
-                    operation(item, operand)
-                }
+        let symbol = operation_parts.next().unwrap().trim();
+        let operand = operation_parts.next().unwrap().trim();
+        let operation = if operand == "old" {
+            Square
+        } else {
+            match symbol {
+                "*" => Multiply(operand.parse::<u32>().unwrap()),
+                "+" => Add(operand.parse::<u32>().unwrap()),
+                _ => panic!("Attempt to parse invalid operation symbol"),
             }
         };
 
         let divisor = parse_ending_number(test_desc);
-        let true_target = parse_ending_number(true_desc) as usize;
-        let false_target = parse_ending_number(false_desc) as usize;
-        let test = move |item: &u32| {
-            if item % divisor == 0 {
-                true_target
-            } else {
-                false_target
-            }
-        };
+        let true_idx = parse_ending_number(true_desc) as usize;
+        let false_idx = parse_ending_number(false_desc) as usize;
 
         Monkey {
             items,
             n_inspections: 0,
-            inspect_fn: Box::new(inspect),
-            test_fn: Box::new(test),
+            operation,
+            divisor,
+            true_idx,
+            false_idx,
         }
-    }
-}
-
-fn parse_operation(symbol: &str) -> impl Fn(u32, u32) -> u32 {
-    match symbol {
-        "*" => |a, b| a * b,
-        "+" => |a, b| a + b,
-        _ => panic!("Attempt to parse invalid operation"),
     }
 }
 
@@ -99,12 +102,12 @@ pub fn part_one(input: &str) -> Option<u32> {
     const NUM_ROUNDS: usize = 20;
     for _ in 0..NUM_ROUNDS {
         for mut monkey in monkeys.iter().map(|m| m.borrow_mut()) {
-            let items: Vec<_> = monkey.items.drain(..).collect();
-            for mut item in items {
-                item = monkey.inspect(item);
-                item /= 3;
-                let target_idx = monkey.test(&item);
-                Monkey::throw(&mut monkeys[target_idx].borrow_mut(), item);
+            let mut items: Vec<_> = monkey.items.drain(..).collect();
+            for item in items.iter_mut() {
+                monkey.inspect(item);
+                *item /= 3;
+                let target_idx = monkey.test(item);
+                Monkey::throw(&mut monkeys[target_idx].borrow_mut(), *item);
             }
         }
     }
